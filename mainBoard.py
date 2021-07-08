@@ -310,24 +310,7 @@ class Ui_MainWindow(object):
         auth_plugin='mysql_native_password')
         global mycursor
         mycursor = mydb.cursor()
-        """
-        kahva = 1
-        
 
-        
-        def test(self,MainWindow):
-                global kahva
-                print("radi")
-                kahva +=1
-                cijena = kahva *1.5
-                new_text = (f"kafa{kahva},{cijena}KM")#inserting into a label refresh rate 1 sec 
-                ui.label_8.setText(new_text)
-                return
-        
-        timer = QtCore.QTimer()        
-        timer.start(100)  
-        timer.timeout.connect(test)
-        """
         def kafa(self,MainWindow):
 
                 
@@ -343,7 +326,7 @@ class Ui_MainWindow(object):
                         a = int(c)
 
 
-                total = a -1  
+                total = a -1
                 
                 sql = ("DELETE  FROM kafa WHERE kolicina = %s")
                 val = (a,)
@@ -358,7 +341,16 @@ class Ui_MainWindow(object):
 
                 output = mycursor.fetchall()
                 mydb.commit()
+                def update_label():
+                        new_text = ("welcome  please select what option you want")#inserting into a label refresh rate 1 sec 
+                        ui.label.setText(new_text)
+
+                timer = QtCore.QTimer()
+                timer.timeout.connect(update_label)
+                timer.start(100)  
+                sys.exit(app.exec_())
                 return
+
         def caj(self,MainWindow):
 
                 sql = ("SELECT kolicina FROM caj ")
