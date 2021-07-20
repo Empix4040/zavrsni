@@ -9,6 +9,8 @@ from PyQt5.QtCore import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pyzbar import pyzbar
 from adminPanel import *
+from mainBoard import * 
+import mainBoard
 from qt_material import  apply_stylesheet
 
 
@@ -29,7 +31,95 @@ def openAdminPanel():
         sys.exit(aplikacija.exec_())
         return skener()
               
+global openMainBoard
+def openMainBoard():
+        import sys
+        appMainBoard = QtWidgets.QApplication(sys.argv)
+        apply_stylesheet(appMainBoard,theme ="dark_blue.xml",invert_secondary=False)
+        window = QtWidgets.QMainWindow()
+        ui = Ui_MainWindow()
+        ui.setupUi(window)
+        global update_label        
+        def update_label():
+                sql = ("SELECT kind FROM vrsta")
+                mycursor.execute(sql)
+                kind = mycursor.fetchall()
+                for vrsta in kind:
+                        vrsta = ','.join(str(o) for o in vrsta)
+                        vrsta = vrsta.replace("(","")
+                        vrsta = vrsta.replace(")","")
+                        vrsta = vrsta.replace(",","")
+                        vrsta = vrsta.replace("'","")
+                        vrsta = vrsta.replace("[","")
+                        vrsta = vrsta.replace("]","")
+                        kind = vrsta
+                KindLabelText = (f"{kind} ")
 
+                sql = ("SELECT Receipt FROM printanje")
+                mycursor.execute(sql)
+
+                rec  = mycursor.fetchall()
+                lista = []
+                for priv in rec:
+                        priv = ','.join(str(o) for o in priv)
+                        priv = priv.replace("(","")
+                        priv = priv.replace(")","")
+                        priv = priv.replace(",","")
+                        priv = priv.replace("'","")
+                        priv = priv.replace("[","")
+                        priv = priv.replace("]","")
+                        lista.append(priv)
+                lista = ','.join(str(i) for i in lista)
+                lista =        lista.replace("(","")
+                lista =        lista.replace(")","")
+                lista =        lista.replace(","," \n")
+                lista =        lista.replace("'","")
+                lista =        lista.replace("[","")
+                lista =        lista.replace("]","")
+                ReceiptLabelText = (f"Receipt\n{lista}\n")
+                sql = ("SELECT konobar FROM privermena")
+                mycursor.execute(sql)
+                privremeni = mycursor.fetchall()
+                for priv in privremeni:
+                        priv = ','.join(str(o) for o in priv)
+                        priv = priv.replace("(","")
+                        priv = priv.replace(")","")
+                        priv = priv.replace(",","")
+                        priv = priv.replace("'","")
+                        priv = priv.replace("[","")
+                        priv = priv.replace("]","")
+                        konobar  = priv
+                WaiterLabelText = (f"{konobar}")
+                sqlQuantity = ("SELECT Quantity FROM kolicina")
+                mycursor.execute(sqlQuantity)
+                kolicina = mycursor.fetchall()
+                quantity = 0
+                for kol in kolicina:
+                        kol = ','join(str(o) for o in kol)
+                        kol = kol.replace("(","")
+                        kol = kol.replace(")","")
+                        kol = kol.replace(",","")
+                        kol = kol.replace("'","")
+                        kol = kol.replace("[","")
+                        kol = kol.replace("]","")
+                        quantity += 1
+                        
+                QuantityLabelText = (f"{quantity}")
+                #TotalLabelText = (f"{zbir}")
+                ui.ReceiptLabel.setText(ReceiptLabelText)
+                ui.KindLabelUpdate.setText(KindLabelText)
+                ui.QuantityLabelUpdate.setText(QuantityLabelText)
+                #ui.TotalLabelUpdate.setText(TotalLabelText)
+                ui.WaiterLabel.setText(WaiterLabelText)
+                return update_label
+        window.show()
+        timer = QtCore.QTimer()
+        timer.timeout.connect(update_label)
+        timer.start(100)                
+        sys.exit(appMainBoard.exec_())
+        return openMainBoard
+
+                
 def skener():
         def read_barcodes(frame):
                 global mydb
@@ -78,7 +168,7 @@ def skener():
                                 else:
                                         pass
 
-                        
+                        global konobar
                         for konobar in outputKonobar:
                                 konobar = ','.join(str(o) for o in konobar)
                                 konobar = konobar.replace("(","")
@@ -88,7 +178,12 @@ def skener():
                                 konobar = konobar.replace("[","")
                                 konobar = konobar.replace("]","")
                                 if konobar == barcode_info:
+                                        sql = ("INSERT INTO privermena (konobar) VALUES (%s)")
+                                        val = (konobar,)
+                                        mycursor.execute(sql,val)
+                                        mydb.commit()
                                         print("radi konobar")
+                                        openMainBoard()
                                 
                         
                 
@@ -102,7 +197,7 @@ def skener():
                                         
                         
                 return frame
-                                    
+
         def main():
                 global frame
                 camera = cv2.VideoCapture(0) 
@@ -119,4 +214,5 @@ def skener():
 
         if __name__ == '__main__':
                 main()
-skener()
+if __name__ == '__main__':
+        skener()

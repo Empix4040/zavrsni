@@ -8,7 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from qt_material import apply_stylesheet
 from items import Ui_Items
 from qrmaker import Ui_QRWindow
-from scanner import * 
+
 
 
 
@@ -21,7 +21,7 @@ class Ui_AdminProzor(object):
             self.ui = Ui_Items()
             self.ui.setupUi(self.window)
             self.window.show()
-            return skener()
+            
 
     def openWindowQRInput(self):
 
@@ -31,7 +31,7 @@ class Ui_AdminProzor(object):
             self.ui = Ui_QRWindow()
             self.ui.setupUi(self.window)
             self.window.show()
-            return skener()
+           
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("admin board")
         MainWindow.resize(800, 600)

@@ -3,10 +3,223 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import time
 from qt_material import apply_stylesheet
+from pyzbar import pyzbar
+import cv2
+from adminPanel import Ui_AdminProzor
+def openAdminPanel():
+        import sys
+        aplikacija = QtWidgets.QApplication(sys.argv)
+        apply_stylesheet( aplikacija , theme='dark_red.xml',invert_secondary=True)
+        window = QtWidgets.QMainWindow()
+        ui = Ui_AdminProzor()
+        ui.setupUi(window)
+        window.show()
+        def update_label():
+            new_text = (f"welcome {ime} please select what option you want")#inserting into a label refresh rate 1 sec 
+            ui.label.setText(new_text)
+        timer = QtCore.QTimer()
+        timer.timeout.connect(update_label)
+        timer.start(100)
+        sys.exit(aplikacija.exec_())
+        return skener()
+def skener():
+        def read_barcodes(frame):
+                global mydb
+                mydb = mysql.connector.connect(user='root', password='wildfactor', host='127.0.0.1',port=3306,database='items',
+                auth_plugin='mysql_native_password')
+                global mycursor
+                mycursor = mydb.cursor()
+                
+                barcodes = pyzbar.decode(frame)
+                for barcode in barcodes:
+                        x, y , w, h = barcode.rect
+                        global barcode_info
+                        barcode_info = barcode.data.decode('utf-8')
+                
+                        barcode_info = barcode_info.replace("(","")
+                        barcode_info = barcode_info.replace(")","")
+                        barcode_info = barcode_info.replace(",","")
+                        barcode_info = barcode_info.replace("'","")
+                        barcode_info = barcode_info.replace("[","")
+                        barcode_info = barcode_info.replace("]","")
+                        
+                        cv2.rectangle(frame, (x, y),(x+w, y+h), (0, 255, 0), 2)
+                        
+                        
+                        sql1 = ("SELECT * FROM konobari")
+                        mycursor.execute(sql1,)
+                        outputKonobar = mycursor.fetchall()
+                        
+                        sql = ("SELECT * FROM admin")
+                        mycursor.execute(sql,)
+                        outputAdmin = mycursor.fetchall()
+                        
+                        for admin in outputAdmin:
+                                admin = ','.join(str(o) for o in admin)
+                                admin = admin.replace("(","")
+                                admin = admin.replace(")","")
+                                admin = admin.replace(",","")
+                                admin = admin.replace("'","")
+                                admin = admin.replace("[","")
+                                admin = admin.replace("]","")
+                                if admin == barcode_info:
+                                        global ime
+                                        ime = admin
+                                        print("radi")
+                                        openAdminPanel()
+                                else:
+                                        pass
+
+                        global konobar
+                        for konobar in outputKonobar:
+                                konobar = ','.join(str(o) for o in konobar)
+                                konobar = konobar.replace("(","")
+                                konobar = konobar.replace(")","")
+                                konobar = konobar.replace(",","")
+                                konobar = konobar.replace("'","")
+                                konobar = konobar.replace("[","")
+                                konobar = konobar.replace("]","")
+                                if konobar == barcode_info:
+                                        sql = ("INSERT INTO privermena (konobar) VALUES (%s)")
+                                        val = (konobar,)
+                                        mycursor.execute(sql,val)
+                                        mydb.commit()
+                                        print("radi konobar")
+                                        import sys
+                                        appMainBoard = QtWidgets.QApplication(sys.argv)
+                                        apply_stylesheet(appMainBoard,theme ="dark_blue.xml",invert_secondary=False)
+                                        window = QtWidgets.QMainWindow()
+                                        ui = Ui_MainWindow()
+                                        ui.setupUi(window)
+                                        global update_label        
+                                        def update_label():
+                                                sql = ("SELECT kind FROM vrsta")
+                                                mycursor.execute(sql)
+                                                kind = mycursor.fetchall()
+                                                for vrsta in kind:
+                                                        vrsta = ','.join(str(o) for o in vrsta)
+                                                        vrsta = vrsta.replace("(","")
+                                                        vrsta = vrsta.replace(")","")
+                                                        vrsta = vrsta.replace(",","")
+                                                        vrsta = vrsta.replace("'","")
+                                                        vrsta = vrsta.replace("[","")
+                                                        vrsta = vrsta.replace("]","")
+                                                        kind = vrsta
+                                                KindLabelText = (f"{kind} ")
+
+                                                sql = ("SELECT Receipt FROM printanje")
+                                                mycursor.execute(sql)
+
+                                                rec  = mycursor.fetchall()
+                                                lista = []
+                                                for priv in rec:
+                                                        priv = ','.join(str(o) for o in priv)
+                                                        priv = priv.replace("(","")
+                                                        priv = priv.replace(")","")
+                                                        priv = priv.replace(",","")
+                                                        priv = priv.replace("'","")
+                                                        priv = priv.replace("[","")
+                                                        priv = priv.replace("]","")
+                                                        lista.append(priv)
+                                                lista = ','.join(str(i) for i in lista)
+                                                lista =        lista.replace("(","")
+                                                lista =        lista.replace(")","")
+                                                lista =        lista.replace(","," \n")
+                                                lista =        lista.replace("'","")
+                                                lista =        lista.replace("[","")
+                                                lista =        lista.replace("]","")
+                                                ReceiptLabelText = (f"Receipt\n{lista}\n")
+                                                sql = ("SELECT konobar FROM privermena")
+                                                mycursor.execute(sql)
+                                                privremeni = mycursor.fetchall()
+                                                for priv in privremeni:
+                                                        priv = ','.join(str(o) for o in priv)
+                                                        priv = priv.replace("(","")
+                                                        priv = priv.replace(")","")
+                                                        priv = priv.replace(",","")
+                                                        priv = priv.replace("'","")
+                                                        priv = priv.replace("[","")
+                                                        priv = priv.replace("]","")
+                                                        konobar  = priv
+                                                WaiterLabelText = (f"{konobar}")
+                                                sqlQuantity = ("SELECT Quantity FROM kolicina")
+                                                mycursor.execute(sqlQuantity)
+                                                kolicina = mycursor.fetchall()
+                                                quantity = 0
+                                                zbir = 0
+                                                for kol in kolicina:
+                                                        kol = ','.join(str(o) for o in kol)
+                                                        kol = kol.replace("(","")
+                                                        kol = kol.replace(")","")
+                                                        kol = kol.replace(",","")
+                                                        kol = kol.replace("'","")
+                                                        kol = kol.replace("[","")
+                                                        kol = kol.replace("]","")
+                                                        quantity += 1
+                                                        if kol == "kafa":
+                                                            zbir +=1.5
+                                                        elif kol == "caj":
+                                                            zbir +=1
+                                                        elif kol == "CocaCola":
+                                                            zbir += 2.5
+                                                        elif kol == "Cockta":
+                                                            zbir += 3
+                                                        elif kol == "Senzacija":
+                                                            zbir +=1.5
+                                                        elif kol == "Kapucino":
+                                                            zbir += 2
 
 
+                                                    
+                                                        
+                                                
+                                                QuantityLabelText = (f"{quantity}")
+                                                TotalLabelText = (f"{zbir}")
+                                                ui.ReceiptLabel.setText(ReceiptLabelText)
+                                                ui.KindLabelUpdate.setText(KindLabelText)
+                                                ui.QuantityLabelUpdate.setText(QuantityLabelText)
+                                                ui.TotalLabelUpdate.setText(TotalLabelText)
+                                                ui.WaiterLabel.setText(WaiterLabelText)
+                                                return update_label
+                                        window.show()
+                                        timer = QtCore.QTimer()
+                                        timer.timeout.connect(update_label)
+                                        timer.start(100)                
+                                        sys.exit(appMainBoard.exec_())
+                                
+                        
+                
+
+
+
+
+                        font = cv2.FONT_HERSHEY_DUPLEX
+                        cv2.putText(frame, barcode_info, (x + 6, y - 6), font, 2.0, (255, 255, 255), 1)
+                
+                                        
+                        
+                return frame
+
+        def main():
+                global frame
+                camera = cv2.VideoCapture(0) 
+                ret, frame = camera.read()
+                
+                while ret:
+                        ret, frame = camera.read()
+                        frame = read_barcodes(frame)
+                        cv2.imshow('Barcode/QR code reader', frame)
+                        if cv2.waitKey(1) & 0xFF == 27:
+                                break
+                camera.release()
+                cv2.destroyWindows()
+
+        if __name__ == '__main__':
+                main()
+                
 class Ui_MainWindow(object):
         def setupUi(self, MainWindow):
+                
                 MainWindow.setObjectName("MainWindow")
                 MainWindow.setWindowModality(QtCore.Qt.NonModal)
                 MainWindow.resize(1230, 800)
@@ -23,9 +236,9 @@ class Ui_MainWindow(object):
                 self.horizontalLayout.setObjectName("horizontalLayout")
                 self.KindLabel = QtWidgets.QLabel(self.horizontalLayoutWidget)
                 self.KindLabel.setStyleSheet("font: 16pt \"MS Shell Dlg 2\";\n"
-        "border: solid black;\n"
+        "border: solid black;\n" 
         "border-width : 1px 0px 1px 1px;\n"
-        "background-color:rgb(186,85,211);")
+        "background-color:rgb(68,138,255);")
                 self.KindLabel.setAlignment(QtCore.Qt.AlignCenter)
                 self.KindLabel.setObjectName("KindLabel")
                 self.horizontalLayout.addWidget(self.KindLabel)
@@ -33,7 +246,7 @@ class Ui_MainWindow(object):
                 self.KindLabelUpdate.setStyleSheet("font: 16pt \"MS Shell Dlg 2\";\n"
         "border: solid black;\n"
         "border-width : 1px 0px 1px 0px;\n"
-        "background-color:rgb(221,160,221);")
+        "background-color:rgb(68,138,255);")
                 self.KindLabelUpdate.setAlignment(QtCore.Qt.AlignCenter)
                 self.KindLabelUpdate.setObjectName("KindLabelUpdate")
                 self.horizontalLayout.addWidget(self.KindLabelUpdate)
@@ -41,7 +254,7 @@ class Ui_MainWindow(object):
                 self.QuantityLabel.setStyleSheet("font: 16pt \"MS Shell Dlg 2\";\n"
         "border: solid black;\n"
         "border-width : 1px 0px 1px 1px;\n"
-        "background-color:rgb(186,85,211);")
+        "background-color:rgb(68,138,255);")
                 self.QuantityLabel.setAlignment(QtCore.Qt.AlignCenter)
                 self.QuantityLabel.setObjectName("QuantityLabel")
                 self.horizontalLayout.addWidget(self.QuantityLabel)
@@ -49,7 +262,7 @@ class Ui_MainWindow(object):
                 self.QuantityLabelUpdate.setStyleSheet("font: 14pt \"MS Shell Dlg 2\";\n"
         "border: solid black;\n"
         "border-width : 1px 0px 1px 0px;\n"
-        "background-color:rgb(221,160,221);")
+        "background-color:rgb(68,138,255);")
                 self.QuantityLabelUpdate.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
                 self.QuantityLabelUpdate.setObjectName("QuantityLabelUpdate")
                 self.horizontalLayout.addWidget(self.QuantityLabelUpdate)
@@ -57,22 +270,21 @@ class Ui_MainWindow(object):
                 self.TotalLabel.setStyleSheet("font: 16pt \"MS Shell Dlg 2\";\n"
         "border: solid black;\n"
         "border-width : 1px 0px 1px 1px;\n"
-        "background-color:rgb(186,85,211);")
+        "background-color:rgb(68,138,255);")
                 self.TotalLabel.setAlignment(QtCore.Qt.AlignCenter)
                 self.TotalLabel.setObjectName("TotalLabel")
                 self.horizontalLayout.addWidget(self.TotalLabel)
-                self.TotallabelUpdate = QtWidgets.QLabel(self.horizontalLayoutWidget)
-                self.TotallabelUpdate.setStyleSheet("font: 14pt \"MS Shell Dlg 2\";\n"
+                self.TotalLabelUpdate = QtWidgets.QLabel(self.horizontalLayoutWidget)
+                self.TotalLabelUpdate.setStyleSheet("font: 14pt \"MS Shell Dlg 2\";\n"
         "border: solid black;\n"
         "border-width : 1px 1px 1px 0px;\n"
-        "background-color:rgb(221,160,221);")
-                self.TotallabelUpdate.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
-                self.TotallabelUpdate.setObjectName("label")
-                self.horizontalLayout.addWidget(self.TotallabelUpdate)
+        "background-color:rgb(68,138,255);")
+                self.TotalLabelUpdate.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+                self.TotalLabelUpdate.setObjectName("label")
+                self.horizontalLayout.addWidget(self.TotalLabelUpdate)
                 self.kafaButton = QtWidgets.QPushButton(self.centralwidget)
                 self.kafaButton.setGeometry(QtCore.QRect(20, 140, 181, 91))
                 self.kafaButton.setObjectName("kafaButton")
-                self.kafaButton.clicked.connect(self.kafa)
                 self.kapucinaButton = QtWidgets.QPushButton(self.centralwidget)
                 self.kapucinaButton.setGeometry(QtCore.QRect(20, 440, 181, 91))
                 
@@ -187,29 +399,31 @@ class Ui_MainWindow(object):
                 self.PalacinciButton.setGeometry(QtCore.QRect(800, 240, 181, 91))
                 
                 self.PalacinciButton.setObjectName("PalacinciButton")
-                self.label_7 = QtWidgets.QLabel(self.centralwidget)
-                self.label_7.setGeometry(QtCore.QRect(1010, 380, 201, 81))
-                self.label_7.setStyleSheet("background-color:grey;\n"
+                self.WaiterLabel = QtWidgets.QLabel(self.centralwidget)
+                self.WaiterLabel.setGeometry(QtCore.QRect(1010, 380, 201, 81))
+                self.WaiterLabel.setStyleSheet("background-color:grey;\n"
         "font: 16pt \"MS Shell Dlg 2\";\n"
         "border: solid black;\n"
         "border-width : 1px 1px 1px 1px;\n"
-        "background-color:rgb(221,160,221);\n"
+        "background-color:rgb(68,138,255);\n"
         "border-radius:10px;")
-                self.label_7.setAlignment(QtCore.Qt.AlignCenter)
-                self.label_7.setObjectName("label_7")
+                self.WaiterLabel.setAlignment(QtCore.Qt.AlignCenter)
+                self.WaiterLabel.setObjectName("WaiterLabel")
                 self.EnterButton = QtWidgets.QPushButton(self.centralwidget)
                 self.EnterButton.setGeometry(QtCore.QRect(1000, 490, 221, 241))
 
                 self.EnterButton.setObjectName("EnterButton")
-                self.label_8 = QtWidgets.QLabel(self.centralwidget)
-                self.label_8.setGeometry(QtCore.QRect(1014, 150, 191, 201))
-                self.label_8.setStyleSheet("background-color:grey;\n"
+                self.ReceiptLabel = QtWidgets.QLabel(self.centralwidget)
+                self.ReceiptLabel.setGeometry(QtCore.QRect(1014, 150, 191, 201))
+                self.ReceiptLabel.setStyleSheet("background-color:grey;\n"
         "border: solid black;\n"
         "border-width : 1px 1px 1px 1px;\n"
-        "background-color:rgb(221,160,221);\n"
+        "background-color:rgb(68,138,255);\n"
         "border-radius:10px;")
-                self.label_8.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
-                self.label_8.setObjectName("label_8")
+                self.ReceiptLabel.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignCenter)
+                self.ReceiptLabel.setIndent(20)
+                self.ReceiptLabel.setObjectName("ReceiptLabel")
+                self.ReceiptLabel.setWordWrap(True)
                 self.line = QtWidgets.QFrame(self.centralwidget)
                 self.line.setGeometry(QtCore.QRect(400, 120, 20, 601))
                 self.line.setFrameShape(QtWidgets.QFrame.VLine)
@@ -232,12 +446,12 @@ class Ui_MainWindow(object):
         def retranslateUi(self, MainWindow):
                 _translate = QtCore.QCoreApplication.translate
                 MainWindow.setWindowTitle(_translate("MainWindow", "Emir"))
-                self.KindLabel.setText(_translate("MainWindow", "kind"))
+                self.KindLabel.setText(_translate("MainWindow", "kind:"))
                 self.KindLabelUpdate.setText(_translate("MainWindow", ""))
-                self.QuantityLabel.setText(_translate("MainWindow", "quantity"))
+                self.QuantityLabel.setText(_translate("MainWindow", "Quantity:"))
                 self.QuantityLabelUpdate.setText(_translate("MainWindow", ""))
-                self.TotalLabel.setText(_translate("MainWindow", "total"))
-                self.TotallabelUpdate.setText(_translate("MainWindow", "TextLabel"))
+                self.TotalLabel.setText(_translate("MainWindow", "Total:"))
+                self.TotalLabelUpdate.setText(_translate("MainWindow", ""))
                 self.kafaButton.setText(_translate("MainWindow", "kafa"))
                 self.kafaButton.clicked.connect(self.kafa)
                 self.kapucinaButton.setText(_translate("MainWindow", "kapucino"))
@@ -298,11 +512,11 @@ class Ui_MainWindow(object):
                 self.PastaButton.clicked.connect(self.Pasta)
                 self.PalacinciButton.setText(_translate("MainWindow", "Palacinci"))
                 self.PalacinciButton.clicked.connect(self.Palacinci)
-                self.label_7.setText(_translate("MainWindow", "waiter"))
+                self.WaiterLabel.setText(_translate("MainWindow", "Waiter:"))
                 self.EnterButton.setText(_translate("MainWindow", "Enter"))
 
                 self.EnterButton.clicked.connect(self.Enter)
-                self.label_8.setText(_translate("MainWindow", "TextLabel"))
+                self.ReceiptLabel.setText(_translate("MainWindow", "Receipt:"))
 
 
         global mydb
@@ -312,46 +526,122 @@ class Ui_MainWindow(object):
         mycursor = mydb.cursor()
 
         def kafa(self,MainWindow):
-
                 
+                kind = "kafa"
+                
+                sql1 = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                sql4 = ("TRUNCATE TABLE vrsta")
+                sql3 = ("INSERT INTO vrsta(kind) VALUES (%s)")
+                mycursor.execute(sql3,val)
+                mycursor.execute(sql1,val)
+                mycursor.execute(sql2,val)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "kafa":
+
+                                quantity += 1
+                                
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+
+
+                update_label()
+
                 sql = ("SELECT kolicina FROM kafa ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
                 
-                mydb.commit
+
                 for i in kol:
                         global a 
                         c = "".join(map(str,i))
 
                         a = int(c)
-
-
-                total = a -1
                 
+                print(a)
+
+                
+                total = a - 1
                 sql = ("DELETE  FROM kafa WHERE kolicina = %s")
                 val = (a,)
                 mycursor.execute(sql,val)
-                mydb.commit()
+
                 sql = ("INSERT INTO kafa (kolicina) VALUES (%s)")
                 val = (total,)
                 mycursor.execute(sql,val)
-                mydb.commit()
+                
                 sql = ("SELECT kolicina FROM kafa ")
                 mycursor.execute(sql)
 
                 output = mycursor.fetchall()
                 mydb.commit()
-                def update_label():
-                        new_text = ("welcome  please select what option you want")#inserting into a label refresh rate 1 sec 
-                        ui.label.setText(new_text)
-
-                timer = QtCore.QTimer()
-                timer.timeout.connect(update_label)
-                timer.start(100)  
-                sys.exit(app.exec_())
                 return
+                
 
         def caj(self,MainWindow):
+                
+                global kind
+                kind = "caj"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "caj":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
 
                 sql = ("SELECT kolicina FROM caj ")
                 mycursor.execute(sql)
@@ -384,6 +674,47 @@ class Ui_MainWindow(object):
 
         def kapucino(self,MainWindow):
                 
+                global kind 
+                kind = "kapucino"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "kapucino":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
+   
                 sql = ("SELECT kolicina FROM kapucino ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -414,6 +745,49 @@ class Ui_MainWindow(object):
                 return
 
         def CocaCola(self,MainWindow):
+                global kind 
+                kind = "CocaCola"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "CocaCola":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+      
+      
+                update_label()
+
                 sql = ("SELECT kolicina FROM CocaCola ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -444,7 +818,46 @@ class Ui_MainWindow(object):
                 return
 
         def CappyJagoda(self,MainWindow):
+                global kind 
+                kind = "Cappy Jagoda"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
 
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Cappy Jagoda":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM CappyJagoda ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -475,7 +888,46 @@ class Ui_MainWindow(object):
                 return
 
         def CappyNarandza(self,MainWindow):
+                global kind 
+                kind = "Cappy Narandza"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
 
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Cappy Narandza":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM CappyNarandza ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -505,7 +957,46 @@ class Ui_MainWindow(object):
                 mydb.commit()
                 return
         def CappyJabuka(self,MainWindow):
+                global kind 
+                kind = "Cappy Jabuka"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
 
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Cappy Jabuka":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM CappyJabuka ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -536,7 +1027,45 @@ class Ui_MainWindow(object):
                 return
                 
         def Senzacija(self,MainWindow):
+                global kind 
+                kind = "Senzacija"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Senzacija":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM Senzacija ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -567,7 +1096,46 @@ class Ui_MainWindow(object):
                 return
 
         def cockta(self,MainWindow):
+                global kind 
+                kind = "Cockta"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Cockta":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM cockta ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -598,7 +1166,46 @@ class Ui_MainWindow(object):
                 return
 
         def Lemonade(self,MainWindow):
+                global kind 
+                kind = "Lemonade"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Lemonade":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM Lemonade ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -629,7 +1236,46 @@ class Ui_MainWindow(object):
                 return
 
         def CappyBreskva(self,MainWindow):
+                global kind 
+                kind = "Cappy Breskva"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Cappy Breskva":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM CappyBreskva ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -662,7 +1308,46 @@ class Ui_MainWindow(object):
 
                 
         def CappyMarelica(self,MainWindow):
+                global kind 
+                kind = "Cappy Marelica"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Cappy Marelica":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM CappyMarelica ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -690,7 +1375,46 @@ class Ui_MainWindow(object):
                 return
                 
         def JanaIceTea(self,MainWindow):
+                global kind 
+                kind = "Janna Ice Tea"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Jana Ice Tea":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM JanaIceTea ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -719,7 +1443,46 @@ class Ui_MainWindow(object):
                 return
                 
         def JanaNarandza(self,MainWindow):
+                global kind 
+                kind = "Jana Narandza"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Jana Narandza":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM JanaNarandza ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -747,7 +1510,46 @@ class Ui_MainWindow(object):
                 return
 
         def JanaLimun(self,MainWindow):
+                global kind 
+                kind = "Jana Limun"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Jana Limun":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM JanaLimun ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -775,7 +1577,46 @@ class Ui_MainWindow(object):
                 return
 
         def RedBull(self,MainWindow):
+                global kind 
+                kind = "Red Bull"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Red Bull":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM RedBull ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -807,7 +1648,46 @@ class Ui_MainWindow(object):
 
 
         def Somersby(self,MainWindow):
+                global kind 
+                kind = "Somersby"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Somersby":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM Somersby ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -836,8 +1716,47 @@ class Ui_MainWindow(object):
 
 
         def Pizza(self,MainWindow):
+                global kind 
+                kind = "pizza"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
 
-                sql = ("SELECT kolicina FROM Pizza(): ")
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Pizza":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
+                sql = ("SELECT kolicina FROM pizza")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
                 
@@ -848,15 +1767,15 @@ class Ui_MainWindow(object):
                         a = int(c)
                 total = a + 1  
                 
-                sql = ("DELETE  FROM Pizza(): WHERE kolicina = %s")
+                sql = ("DELETE  FROM pizza WHERE kolicina = %s")
                 val = (a,)
                 mycursor.execute(sql,val)
                 mydb.commit()
-                sql = ("INSERT INTO Pizza(): (kolicina) VALUES (%s)")
+                sql = ("INSERT INTO pizza (kolicina) VALUES (%s)")
                 val = (total,)
                 mycursor.execute(sql,val)
                 mydb.commit()
-                sql = ("SELECT kolicina FROM Pizza(): ")
+                sql = ("SELECT kolicina FROM pizza ")
                 mycursor.execute(sql)
 
                 output = mycursor.fetchall()
@@ -864,7 +1783,46 @@ class Ui_MainWindow(object):
                 return
 
         def Doner(self,MainWindow):
+                global kind 
+                kind = "Doner"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Doner":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM Doner ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -894,6 +1852,46 @@ class Ui_MainWindow(object):
 
                 
         def karlovacko(self,MainWindow):
+                global kind 
+                kind = "Karlovacko"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Karlovacko":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM karlovacko ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -921,6 +1919,46 @@ class Ui_MainWindow(object):
                 return
                 
         def Palacinci(self,MainWindow):
+                global kind 
+                kind = "Palacinci"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Palacinci":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 
                 sql = ("SELECT kolicina FROM Palacinci ")
                 mycursor.execute(sql)
@@ -950,7 +1988,46 @@ class Ui_MainWindow(object):
                 
 
         def radler(self,MainWindow):
+                global kind 
+                kind = "Radler"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
 
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Radler":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM radler ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -981,6 +2058,46 @@ class Ui_MainWindow(object):
                 
         
         def bavaria(self,MainWindow):
+                global kind 
+                kind = "Bavaria"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Bavaria":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM bavaria ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -1008,7 +2125,46 @@ class Ui_MainWindow(object):
                 return
                 
         def paulaner(self,MainWindow):
+                global kind 
+                kind = "Paulaner"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Paulaner":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM paulaner ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -1036,7 +2192,46 @@ class Ui_MainWindow(object):
                 return
                 
         def tuborg(self,MainWindow):
+                global kind 
+                kind = "Tuborg"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Tuborg":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM tuborg ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -1064,7 +2259,46 @@ class Ui_MainWindow(object):
                 return   
                 
         def vino(self,MainWindow):
+                global kind 
+                kind = "Vino"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Vino":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM vino ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -1093,7 +2327,46 @@ class Ui_MainWindow(object):
                 
         def cedevita(self,MainWindow):
 
+                global kind 
+                kind = "cedevita"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
+                
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
 
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "cedevita":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM cedevita ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -1125,7 +2398,46 @@ class Ui_MainWindow(object):
 
 
         def Hamburger(self,MainWindow):
+                global kind 
+                kind = "Hamburger"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "hamburger":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
 
                 sql = ("SELECT kolicina FROM Hamburger ")
                 mycursor.execute(sql)
@@ -1154,10 +2466,50 @@ class Ui_MainWindow(object):
 
                 output = mycursor.fetchall()
                 mydb.commit()
+                
                 return
 
         def Salata(self,MainWindow):
+                global kind 
+                kind = "Salata"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Salata":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
 
                 sql = ("SELECT kolicina FROM Salata ")
                 mycursor.execute(sql)
@@ -1189,7 +2541,46 @@ class Ui_MainWindow(object):
                 return
 
         def Pasta(self,MainWindow):
+                global kind 
+                kind = "Pasta"
+                sql = ("INSERT INTO printanje (Receipt) VALUES (%s)")
+                val = (kind,)
+                mycursor.execute(sql,val)
+                mydb.commit()
+                sql2 = ("INSERT INTO kolicina (Quantity) VALUES (%s)")
+                val = (kind,)
+                val2 = (kind,)
                 
+                mycursor.execute(sql,val)
+                mycursor.execute(sql2,val2)
+                sql = ("SELECT Quantity FROM kolicina ")
+                mycursor.execute(sql)
+                
+                Quantity = mycursor.fetchall()
+
+                global quantity
+                quantity = 0 
+
+                for i in Quantity:
+                        print(i)
+                        i = ','.join(str(o) for o in i)
+                        i = i.replace("(","")
+                        i = i.replace(")","")
+                        i = i.replace(",","")
+                        i = i.replace("'","")
+                        i = i.replace("[","")
+                        i = i.replace("]","")
+                        if i == "Pasta":
+                                quantity += 1
+                                print(quantity)
+                        else:
+                                sql = ("TRUNCATE TABLE kolicina")
+                                mycursor.execute(sql)
+
+
+                
+
+                update_label()
                 sql = ("SELECT kolicina FROM Pasta ")
                 mycursor.execute(sql)
                 kol = mycursor.fetchall()
@@ -1217,23 +2608,16 @@ class Ui_MainWindow(object):
                 return
 
         def Enter(self,MainWindow):
+                sql1 = ("TRUNCATE TABLE printanje")
+                sql2 = ("TRUNCATE TABLE kolicina")
+                sql3 = ("TRUNCATE TABLE privermena")
+                mycursor.execute(sql1)
+                mycursor.execute(sql2)
+                mycursor.execute(sql3)
                 app.exit()
-if __name__ == "__main__":
-        import sys
-        extra = {
-                
-                # Button colors
-                'danger': '#dc3545', 
-                'warning': '#ffc107',
-                'success': '#17a2b8',
+                return skener()
 
-                # Font
-                'font-family': 'Viaoda Libre',
-        }           
-        app = QtWidgets.QApplication(sys.argv)
-        apply_stylesheet(app, theme='dark_blue.xml',invert_secondary=False,extra=extra)
-        MainWindow = QtWidgets.QMainWindow()
-        ui = Ui_MainWindow()
-        ui.setupUi(MainWindow)
-        MainWindow.show()
-        app.exec_()
+                
+                
+if __name__ == "__main__":
+    skener()

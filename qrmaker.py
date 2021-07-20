@@ -108,9 +108,8 @@ class Ui_QRWindow(object):
                 val = (ime,blank,prezime)
                 mycursor.execute(sql,val)
                 mydb.commit()
-                print("done")
+                
             except:
-                print("nije proslo")
                 pass
 
 
